@@ -20,7 +20,7 @@ Connect [Alassian BitBucket Server][BitBucketserver] or [Alassian BitBucket Clou
 <br /><br /><br /><br />
 
 ## Features <a name="features"></a>
-This script uses BitBuckets Post-Receive WebHooks to submit a payload to your Rocket.Chat intance, which parses the payload and then posts a message containing differen information.<br />
+This script uses BitBuckets Post-Receive WebHooks to submit a payload to your Rocket.Chat instance, which parses the payload and then posts a message containing different information.<br />
 <br /><br /><br /><br />
 
 ## Installation <a name="installation"></a>
@@ -34,11 +34,11 @@ Unzip Sources.
 
 #### Add user (optional)
 This step is optional if you've already got a user which you want to use as post author you can skip this step.<br />
-Otherwise add a new user who is posting the updates to your channel or who ist texting the user which is supposed to be informed.
+Otherwise add a new user who is posting the updates to your channel or who is texting the user which is supposed to be informed.
 <br /><br />
 
 #### Configure incoming Webhook in Rocket.Chat
-In your Rocket.Chat instance go to administration panel an click on "Integrations". To add an integration with BitRocket click on "NEW INTEGRATION".<br />
+In your Rocket.Chat instance go to administration panel and click on "Integrations". To add an integration with BitRocket click on "NEW INTEGRATION".<br />
 Next, choose "Incoming WebHook".
 <br />
 Now, on the webhook config screen, set the following values:

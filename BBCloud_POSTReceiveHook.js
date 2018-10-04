@@ -14,6 +14,7 @@ const showLinks = {
 
 const showNotifications = {
     push: true,
+    changes: true,
     fork: true,
     comment: true,
     pullrequest_created: true,
@@ -64,6 +65,29 @@ const processors = {
             text += "*Pushed* " + "[" + commit.hash.toString().substring(0,6) + "]" + "(" + commit.links.html.href + ")" + ": " + commit.message;
         }
 
+        return {
+            content: {
+                attachments: [create_attachement(info.author, text)],
+                parseUrls: false,
+                color: ((config.color !== '') ? '#' + config.color.replace('#', '') : '#225159')
+            }
+        };
+    },
+
+    changes(request) {
+        const info = get_basic_info(request);
+        
+        const changes = Object.keys(request.content.changes);
+        
+        let text = '';
+        text += "On repository " + "[" + info.repository.name + "]" + "(" + info.repository.link + ")" + ": " + "\n";
+        for(let change of changes) {
+            let changed = request.content.changes[change]
+            text += "*Changed* " + "[" + change + "]\n"
+            text += "\tOld Value: " + changed.old + "\n";
+            text += "\tNew Value: " + changed.new + "\n";
+        }
+      
         return {
             content: {
                 attachments: [create_attachement(info.author, text)],

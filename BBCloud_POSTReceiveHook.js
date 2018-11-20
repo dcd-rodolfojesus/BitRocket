@@ -306,18 +306,22 @@ const processors = {
             sourcebranch: request.content.pullrequest.source.branch.name,
             destinationrepo: request.content.pullrequest.destination.repository.name,
             destinationbranch: request.content.pullrequest.destination.branch.name,
-            title: request.content.pullrequest.title,
+            title: `#${request.content.pullrequest.id}: ${request.content.pullrequest.title}`,
+            link: request.content.pullrequest.links.html.href,
+            timestamp: request.content.pullrequest.updated_on,
             description: request.content.pullrequest.description
         };
         let text = '';
-        text += author.displayname + ' (@' + author.username + ') merged a pull request:\n';
+        text += author.displayname + ' _(@' + author.username + ')_ *merged* a pull request:\n';
         text += '`' + pullrequest.sourcerepo + '/' + pullrequest.sourcebranch + '` => `' + pullrequest.destinationrepo + '/' + pullrequest.destinationbranch + '`\n\n';
         if(pullrequest.description !== '') {
             text += 'Description:\n';
             text += pullrequest.description + '\n';
         }
         const attachment = {
-            author_name: 'MERGED: ' + pullrequest.title
+            author_name: 'MERGED: ' + pullrequest.title,
+            author_link: pullrequest.link,
+            ts: pullrequest.timestamp
         };
         return {
             content: {
@@ -337,18 +341,22 @@ const processors = {
         const pullrequest = {
             sourcebranch: request.content.pullrequest.source.branch.name,
             destinationbranch: request.content.pullrequest.destination.branch.name,
-            title: request.content.pullrequest.title,
-            description: request.content.pullrequest.description
+            title: `#${request.content.pullrequest.id}: ${request.content.pullrequest.title}`,
+            description: request.content.pullrequest.description,
+            link: request.content.pullrequest.links.html.href,
+            timestamp: request.content.pullrequest.updated_on
         };
         let text = '';
-        text += author.displayname + ' (@' + author.username + ') updated a pull request:\n';
+        text += author.displayname + ' _(@' + author.username + ')_ *updated* a pull request:\n';
         text += pullrequest.sourcebranch + ' => ' + pullrequest.destinationbranch + '\n';
         if(pullrequest.description !== '') {
             text += 'Description:\n';
             text += pullrequest.description + '\n';
         }
         const attachment = {
-            author_name: 'UPDATED: ' + pullrequest.title
+            author_name: 'UPDATED: ' + pullrequest.title,
+            author_link: pullrequest.link,
+            ts: pullrequest.timestamp
         };
         return {
             content: {
@@ -362,8 +370,8 @@ const processors = {
 
     pullrequest_comment_created(request) {
         const author = {
-            username: request.content.pullrequest.author.username,
-            displayname: request.content.pullrequest.author.display_name
+            username: request.content.comment.user.username,
+            displayname: request.content.comment.user.display_name
         };
         const comment = {
             text: request.content.comment.content.raw,
@@ -391,8 +399,8 @@ const processors = {
 
     pullrequest_comment_deleted(request) {
         const author = {
-            username: request.content.pullrequest.author.username,
-            displayname: request.content.pullrequest.author.display_name
+            username: request.content.comment.user.username,
+            displayname: request.content.comment.user.display_name
         };
         const comment = {
             text: request.content.comment.content.raw,
@@ -420,8 +428,8 @@ const processors = {
 
     pullrequest_comment_updated(request) {
         const author = {
-            username: request.content.pullrequest.author.username,
-            displayname: request.content.pullrequest.author.display_name
+            username: request.content.comment.user.username,
+            displayname: request.content.comment.user.display_name
         };
         const comment = {
             text: request.content.comment.content.raw,

@@ -13,7 +13,7 @@ const showLinks = {
 };
 
 const showNotifications = {
-    push: true,
+    repo_push: true,
     changes: true,
     fork: true,
     comment: true,
@@ -55,7 +55,7 @@ function create_attachement(author, text){
 }
 
 const processors = {
-    push(request) {
+    repo_push(request) {
         const info = get_basic_info(request);
         const commits = request.content.push.changes[0].commits;
 
@@ -349,10 +349,7 @@ const processors = {
         let text = '';
         text += author.displayname + ' _(@' + author.username + ')_ *updated* a pull request:\n';
         text += pullrequest.sourcebranch + ' => ' + pullrequest.destinationbranch + '\n';
-        if(pullrequest.description !== '') {
-            text += 'Description:\n';
-            text += pullrequest.description + '\n';
-        }
+
         const attachment = {
             author_name: 'UPDATED: ' + pullrequest.title,
             author_link: pullrequest.link,
@@ -472,7 +469,12 @@ class Script {
             const key = request.headers['x-event-key'].replace(':', '_');
 
             if (showNotifications[key] === true) {
-                result = processors[key](request);
+                try {
+                    result = processors[key](request);
+                } catch (e) {
+                    result.message = e.message;
+                    return result; 
+                }
             }
         }
         return result;

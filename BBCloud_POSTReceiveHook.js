@@ -44,12 +44,13 @@ function get_basic_info(request) {
   };
 }
 
-function create_attachement(author, text){
+function create_attachement(author, text, timestamp){
     const attachment = {
         author_name: author.displayname,
         author_link: author.link,
         author_icon: author.avatar,
-        text: text
+        text: text,
+        ts: timestamp
     };
     return attachment;
 }
@@ -67,9 +68,9 @@ const processors = {
 
         return {
             content: {
-                attachments: [create_attachement(info.author, text)],
+                attachments: [create_attachement(info.author, text, commits[0].date)],
                 parseUrls: false,
-                color: ((config.color !== '') ? '#' + config.color.replace('#', '') : '#225159')
+                color: ((config.color !== '') ? '#' + config.color.replace('#', '') : '#225159'),
             }
         };
     },
@@ -396,8 +397,8 @@ const processors = {
 
     pullrequest_comment_deleted(request) {
         const author = {
-            username: request.content.comment.user.username,
-            displayname: request.content.comment.user.display_name
+            username: request.content.actor.username,
+            displayname: request.content.actor.display_name
         };
         const comment = {
             text: request.content.comment.content.raw,

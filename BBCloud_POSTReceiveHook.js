@@ -25,7 +25,10 @@ const showNotifications = {
     pullrequest_updated: true,
     pullrequest_comment_created: true,
     pullrequest_comment_deleted: true,
-    pullrequest_comment_updated: true
+    pullrequest_comment_updated: true,
+    issue_updated: true,
+    issue_created: true,
+    issue_comment_created: true
 };
 
 function get_basic_info(request) {
@@ -438,6 +441,94 @@ const processors = {
 
         let text = `${author.displayname} _(@${author.username})_  *updated a comment* on a pull request:\n${comment.text}\n`;
         
+        const attachment = {
+            author_name: comment.title,
+            author_link: comment.link,
+            ts: comment.timestamp
+        };
+        return {
+            content: {
+                text: text,
+                attachments: [attachment],
+                parseUrls: false,
+                color: ((config.color !== '') ? '#' + config.color.replace('#', '') : '#225159')
+            }
+        };
+    },
+
+    issue_comment_created(request) {
+        const author = {
+            username: request.content.comment.user.username,
+            displayname: request.content.comment.user.display_name
+        };
+        const comment = {
+            text: request.content.comment.content.raw,
+            title: `#${request.content.issue.id}: ${request.content.issue.title}`,
+            link: request.content.issue.links.html.href,
+            timestamp: request.content.comment.created_on
+        };
+
+        let text = `${author.displayname} _(@${author.username})_  *commented* on an issue:\n${comment.text}\n`;
+        
+        const attachment = {
+            author_name: comment.title,
+            author_link: comment.link,
+            ts: comment.timestamp
+        };
+        return {
+            content: {
+                text: text,
+                attachments: [attachment],
+                parseUrls: false,
+                color: ((config.color !== '') ? '#' + config.color.replace('#', '') : '#225159')
+            }
+        };
+    },
+
+    issue_updated(request) {
+        const author = {
+            username: request.content.actor.username,
+            displayname: request.content.actor.display_name
+        };
+        const comment = {
+            text: request.content.comment.content.raw,
+            title: `#${request.content.issue.id}: ${request.content.issue.title}`,
+            link: request.content.issue.links.html.href,
+            oldStatus: request.content.changes.status.old,
+            newStatus: request.content.changes.status.new,
+            timestamp: request.content.issue.updated_on
+        };
+
+        let text = `${author.displayname} _(@${author.username})_  *updated* an issue from _${comment.oldStatus}_ to _${comment.newStatus}_`;
+        
+        const attachment = {
+            author_name: comment.title,
+            author_link: comment.link,
+            ts: comment.timestamp
+        };
+        return {
+            content: {
+                text: text,
+                attachments: [attachment],
+                parseUrls: false,
+                color: ((config.color !== '') ? '#' + config.color.replace('#', '') : '#225159')
+            }
+        };
+    },
+
+    issue_created(request) {
+        const author = {
+            username: request.content.issue.reporter.username,
+            displayname: request.content.issue.reporter.display_name
+        };
+        const comment = {
+            title: `#${request.content.issue.id}: ${request.content.issue.title}`,
+            link: request.content.issue.links.html.href,
+            timestamp: request.content.issue.created_on
+        };
+
+        const text = `${author.displayname} _(@${author.username})_  *created* a _new_ issue`
+
         const attachment = {
             author_name: comment.title,
             author_link: comment.link,

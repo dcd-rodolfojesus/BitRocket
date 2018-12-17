@@ -13,7 +13,7 @@ const showLinks = {
 };
 
 const showNotifications = {
-    push: true,
+    repo_push: true,
     changes: true,
     fork: true,
     comment: true,
@@ -25,7 +25,10 @@ const showNotifications = {
     pullrequest_updated: true,
     pullrequest_comment_created: true,
     pullrequest_comment_deleted: true,
-    pullrequest_comment_updated: true
+    pullrequest_comment_updated: true,
+    issue_updated: true,
+    issue_created: true,
+    issue_comment_created: true
 };
 
 function get_basic_info(request) {
@@ -44,18 +47,19 @@ function get_basic_info(request) {
   };
 }
 
-function create_attachement(author, text){
+function create_attachement(author, text, timestamp){
     const attachment = {
         author_name: author.displayname,
         author_link: author.link,
         author_icon: author.avatar,
-        text: text
+        text: text,
+        ts: timestamp
     };
     return attachment;
 }
 
 const processors = {
-    push(request) {
+    repo_push(request) {
         const info = get_basic_info(request);
         const commits = request.content.push.changes[0].commits;
 
@@ -67,9 +71,9 @@ const processors = {
 
         return {
             content: {
-                attachments: [create_attachement(info.author, text)],
+                attachments: [create_attachement(info.author, text, commits[0].date)],
                 parseUrls: false,
-                color: ((config.color !== '') ? '#' + config.color.replace('#', '') : '#225159')
+                color: ((config.color !== '') ? '#' + config.color.replace('#', '') : '#225159'),
             }
         };
     },
@@ -158,7 +162,7 @@ const processors = {
             comments: request.content.pullrequest.links.comments.href
         };
         let text = '';
-        text += author.displayname + ' (@' + author.username + ') opened a new pull request:\n';
+        text += author.displayname + ' _(@' + author.username + ')_ *opened* a new pull request:\n';
         text += '`' + pullrequest.sourcerepo + '/' + pullrequest.sourcebranch + '` => `' + pullrequest.destinationrepo + '/' + pullrequest.destinationbranch + '`\n\n';
         text += 'Description:\n';
         text += pullrequest.description + '\n';
@@ -205,16 +209,20 @@ const processors = {
             sourcebranch: request.content.pullrequest.source.branch.name,
             destinationrepo: request.content.pullrequest.destination.repository.name,
             destinationbranch: request.content.pullrequest.destination.branch.name,
-            title: request.content.pullrequest.title,
-            reason: request.content.pullrequest.reason
+            title: `#${request.content.pullrequest.id}: ${request.content.pullrequest.title}`,
+            link: request.content.pullrequest.links.html.href,
+            reason: request.content.pullrequest.reason,
+            timestamp: request.content.pullrequest.updated_on
         };
         let text = '';
-        text += author.displayname + ' (@' + author.username + ') declined a pull request:\n';
+        text += author.displayname + ' _(@' + author.username + ')_ *declined* a pull request:\n';
         text += '`' + pullrequest.sourcerepo + '/' + pullrequest.sourcebranch + '` => `' + pullrequest.destinationrepo + '/' + pullrequest.destinationbranch + '`\n\n';
         text += 'Reason:\n';
         text += pullrequest.reason + '\n';
         const attachment = {
-            author_name: 'DECLINED: ' + pullrequest.title
+            author_name: 'DECLINED: ' + pullrequest.title,
+            author_link: pullrequest.link,
+            ts: pullrequest.timestamp
         };
         return {
             content: {
@@ -236,14 +244,18 @@ const processors = {
             sourcebranch: request.content.pullrequest.source.branch.name,
             destinationrepo: request.content.pullrequest.destination.repository.name,
             destinationbranch: request.content.pullrequest.destination.branch.name,
-            title: request.content.pullrequest.title,
+            title: `#${request.content.pullrequest.id}: ${request.content.pullrequest.title}`,
+            link: request.content.pullrequest.links.html.href,
+            timestamp: request.content.approval.date,
             reason: request.content.pullrequest.reason
         };
         let text = '';
-        text += author.displayname + ' (@' + author.username + ') approved a pull request:\n';
+        text += author.displayname + ' _(@' + author.username + ')_ *approved* a pull request:\n';
         text += '`' + pullrequest.sourcerepo + '/' + pullrequest.sourcebranch + '` => `' + pullrequest.destinationrepo + '/' + pullrequest.destinationbranch + '`\n\n';
         const attachment = {
-            author_name: 'APPROVED: ' + pullrequest.title
+            author_name: 'APPROVED: ' + pullrequest.title,
+            author_link: pullrequest.link,
+            ts: pullrequest.timestamp
         };
         return {
             content: {
@@ -265,14 +277,18 @@ const processors = {
             sourcebranch: request.content.pullrequest.source.branch.name,
             destinationrepo: request.content.pullrequest.destination.repository.name,
             destinationbranch: request.content.pullrequest.destination.branch.name,
-            title: request.content.pullrequest.title,
+            title: `#${request.content.pullrequest.id}: ${request.content.pullrequest.title}`,
+            link: request.content.pullrequest.links.html.href,
+            timestamp: request.content.approval.date,
             reason: request.content.pullrequest.reason
         };
         let text = '';
-        text += author.displayname + ' (@' + author.username + ') unapproved a pull request:\n';
+        text += author.displayname + ' _(@' + author.username + ')_ *unapproved* a pull request:\n';
         text += '`' + pullrequest.sourcerepo + '/' + pullrequest.sourcebranch + '` => `' + pullrequest.destinationrepo + '/' + pullrequest.destinationbranch + '`\n\n';
         const attachment = {
-            author_name: 'UNAPPROVED: ' + pullrequest.title
+            author_name: 'UNAPPROVED: ' + pullrequest.title,
+            author_link: pullrequest.link,
+            ts: pullrequest.timestamp
         };
         return {
             content: {
@@ -294,18 +310,22 @@ const processors = {
             sourcebranch: request.content.pullrequest.source.branch.name,
             destinationrepo: request.content.pullrequest.destination.repository.name,
             destinationbranch: request.content.pullrequest.destination.branch.name,
-            title: request.content.pullrequest.title,
+            title: `#${request.content.pullrequest.id}: ${request.content.pullrequest.title}`,
+            link: request.content.pullrequest.links.html.href,
+            timestamp: request.content.pullrequest.updated_on,
             description: request.content.pullrequest.description
         };
         let text = '';
-        text += author.displayname + ' (@' + author.username + ') merged a pull request:\n';
+        text += author.displayname + ' _(@' + author.username + ')_ *merged* a pull request:\n';
         text += '`' + pullrequest.sourcerepo + '/' + pullrequest.sourcebranch + '` => `' + pullrequest.destinationrepo + '/' + pullrequest.destinationbranch + '`\n\n';
         if(pullrequest.description !== '') {
             text += 'Description:\n';
             text += pullrequest.description + '\n';
         }
         const attachment = {
-            author_name: 'MERGED: ' + pullrequest.title
+            author_name: 'MERGED: ' + pullrequest.title,
+            author_link: pullrequest.link,
+            ts: pullrequest.timestamp
         };
         return {
             content: {
@@ -325,18 +345,19 @@ const processors = {
         const pullrequest = {
             sourcebranch: request.content.pullrequest.source.branch.name,
             destinationbranch: request.content.pullrequest.destination.branch.name,
-            title: request.content.pullrequest.title,
-            description: request.content.pullrequest.description
+            title: `#${request.content.pullrequest.id}: ${request.content.pullrequest.title}`,
+            description: request.content.pullrequest.description,
+            link: request.content.pullrequest.links.html.href,
+            timestamp: request.content.pullrequest.updated_on
         };
         let text = '';
-        text += author.displayname + ' (@' + author.username + ') updated a pull request:\n';
+        text += author.displayname + ' _(@' + author.username + ')_ *updated* a pull request:\n';
         text += pullrequest.sourcebranch + ' => ' + pullrequest.destinationbranch + '\n';
-        if(pullrequest.description !== '') {
-            text += 'Description:\n';
-            text += pullrequest.description + '\n';
-        }
+
         const attachment = {
-            author_name: 'UPDATED: ' + pullrequest.title
+            author_name: 'UPDATED: ' + pullrequest.title,
+            author_link: pullrequest.link,
+            ts: pullrequest.timestamp
         };
         return {
             content: {
@@ -350,21 +371,22 @@ const processors = {
 
     pullrequest_comment_created(request) {
         const author = {
-            username: request.content.pullrequest.user.username,
-            displayname: request.content.pullrequest.user.display_name
+            username: request.content.comment.user.username,
+            displayname: request.content.comment.user.display_name
         };
         const comment = {
-            text: request.content.pullrequest.content.raw,
-            id: request.content.pullrequest.id,
-            link: request.content.pullrequest.links.self.href
+            text: request.content.comment.content.raw,
+            title: `#${request.content.pullrequest.id}: ${request.content.pullrequest.title}`,
+            link: request.content.pullrequest.links.html.href,
+            timestamp: request.content.comment.created_on
         };
-        let text = '';
-        text += author.displayname + ' (@' + author.username + ') commented on a pull request:\n';
-        text += 'Comment:\n';
-        text += comment.text + '\n';
+        
+        let text = `${author.displayname} _(@${author.username})_ *commented* on a pull request:\n${comment.text}\n`;
+        
         const attachment = {
-            author_name: '#' + comment.id,
-            author_link: comment.link
+            author_name: comment.title,
+            author_link: comment.link,
+            ts: comment.timestamp
         };
         return {
             content: {
@@ -378,21 +400,22 @@ const processors = {
 
     pullrequest_comment_deleted(request) {
         const author = {
-            username: request.content.pullrequest.user.username,
-            displayname: request.content.pullrequest.user.display_name
+            username: request.content.actor.username,
+            displayname: request.content.actor.display_name
         };
         const comment = {
-            text: request.content.pullrequest.content.raw,
-            id: request.content.pullrequest.id,
-            link: request.content.pullrequest.links.self.href
+            text: request.content.comment.content.raw,
+            title: `#${request.content.pullrequest.id}: ${request.content.pullrequest.title}`,
+            link: request.content.pullrequest.links.html.href,
+            timestamp: request.content.comment.updated_on
         };
-        let text = '';
-        text += author.displayname + ' (@' + author.username + ') deleted a comment on a pull request:\n';
-        text += 'Comment:\n';
-        text += comment.text + '\n';
+
+        let text = `${author.displayname} _(@${author.username})_  *deleted a comment* on a pull request:\n${comment.text}\n`;
+
         const attachment = {
-            author_name: '#' + comment.id,
-            author_link: comment.link
+            author_name: comment.title,
+            author_link: comment.link,
+            ts: comment.timestamp
         };
         return {
             content: {
@@ -406,21 +429,110 @@ const processors = {
 
     pullrequest_comment_updated(request) {
         const author = {
-            username: request.content.pullrequest.user.username,
-            displayname: request.content.pullrequest.user.display_name
+            username: request.content.comment.user.username,
+            displayname: request.content.comment.user.display_name
         };
         const comment = {
-            text: request.content.pullrequest.content.raw,
-            id: request.content.pullrequest.id,
-            link: request.content.pullrequest.links.self.href
+            text: request.content.comment.content.raw,
+            title: `#${request.content.pullrequest.id}: ${request.content.pullrequest.title}`,
+            link: request.content.pullrequest.links.html.href,
+            timestamp: request.content.comment.updated_on
         };
-        let text = '';
-        text += author.displayname + ' (@' + author.username + ') updated a comment on a pull request:\n';
-        text += 'Comment:\n';
-        text += comment.text + '\n';
+
+        let text = `${author.displayname} _(@${author.username})_  *updated a comment* on a pull request:\n${comment.text}\n`;
+        
         const attachment = {
-            author_name: '#' + comment.id,
-            author_link: comment.link
+            author_name: comment.title,
+            author_link: comment.link,
+            ts: comment.timestamp
+        };
+        return {
+            content: {
+                text: text,
+                attachments: [attachment],
+                parseUrls: false,
+                color: ((config.color !== '') ? '#' + config.color.replace('#', '') : '#225159')
+            }
+        };
+    },
+
+    issue_comment_created(request) {
+        const author = {
+            username: request.content.comment.user.username,
+            displayname: request.content.comment.user.display_name
+        };
+        const comment = {
+            text: request.content.comment.content.raw,
+            title: `#${request.content.issue.id}: ${request.content.issue.title}`,
+            link: request.content.issue.links.html.href,
+            timestamp: request.content.comment.created_on
+        };
+
+        let text = `${author.displayname} _(@${author.username})_  *commented* on an issue:\n${comment.text}\n`;
+        
+        const attachment = {
+            author_name: comment.title,
+            author_link: comment.link,
+            ts: comment.timestamp
+        };
+        return {
+            content: {
+                text: text,
+                attachments: [attachment],
+                parseUrls: false,
+                color: ((config.color !== '') ? '#' + config.color.replace('#', '') : '#225159')
+            }
+        };
+    },
+
+    issue_updated(request) {
+        const author = {
+            username: request.content.actor.username,
+            displayname: request.content.actor.display_name
+        };
+        const comment = {
+            text: request.content.comment.content.raw,
+            title: `#${request.content.issue.id}: ${request.content.issue.title}`,
+            link: request.content.issue.links.html.href,
+            oldStatus: request.content.changes.status.old,
+            newStatus: request.content.changes.status.new,
+            timestamp: request.content.issue.updated_on
+        };
+
+        let text = `${author.displayname} _(@${author.username})_  *updated* an issue from _${comment.oldStatus}_ to _${comment.newStatus}_`;
+        
+        const attachment = {
+            author_name: comment.title,
+            author_link: comment.link,
+            ts: comment.timestamp
+        };
+        return {
+            content: {
+                text: text,
+                attachments: [attachment],
+                parseUrls: false,
+                color: ((config.color !== '') ? '#' + config.color.replace('#', '') : '#225159')
+            }
+        };
+    },
+
+    issue_created(request) {
+        const author = {
+            username: request.content.issue.reporter.username,
+            displayname: request.content.issue.reporter.display_name
+        };
+        const comment = {
+            title: `#${request.content.issue.id}: ${request.content.issue.title}`,
+            link: request.content.issue.links.html.href,
+            timestamp: request.content.issue.created_on
+        };
+
+        const text = `${author.displayname} _(@${author.username})_  *created* a _new_ issue`
+
+        const attachment = {
+            author_name: comment.title,
+            author_link: comment.link,
+            ts: comment.timestamp
         };
         return {
             content: {
@@ -445,20 +557,19 @@ class Script {
             }
         };
 
-        let keys = Object.keys(request.content);
-        for (let key of keys) {
-            if (showNotifications[key] === true) {
-                result = processors[key](request);
-            }
-        }
-
-        if (result.error && request.headers['x-event-key']) {
+        if (request.headers['x-event-key']) {
             const key = request.headers['x-event-key'].replace(':', '_');
 
             if (showNotifications[key] === true) {
-                result = processors[key](request);
+                try {
+                    result = processors[key](request);
+                } catch (e) {
+                    result.message = e.message;
+                    return result; 
+                }
             }
         }
         return result;
     }
 }
+
